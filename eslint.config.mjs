@@ -3,6 +3,11 @@ import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
+import globals from 'globals';
+
+const browserGlobals = Object.fromEntries(
+  Object.entries(globals.browser).map(([k, v]) => [k, { ...v, type: 'readonly' }])
+);
 
 export default [
   js.configs.recommended,
@@ -15,6 +20,7 @@ export default [
         sourceType: 'module',
         ecmaFeatures: { jsx: true },
       },
+      globals: browserGlobals,
     },
     plugins: {
       '@typescript-eslint': tseslint,
