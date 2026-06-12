@@ -14,12 +14,19 @@ interface ElectronAPI {
     minimize: () => void;
     maximize: () => void;
     close: () => void;
-    getBounds: () => Promise<Electron.Rectangle | undefined>;
+    getBounds: () => Promise<ElectronRectangle | undefined>;
   };
   file: {
     showOpenDialog: () => Promise<string | null>;
     showSaveDialog: (defaultPath?: string) => Promise<string | null>;
   };
+}
+
+interface ElectronRectangle {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 declare global {
@@ -28,4 +35,4 @@ declare global {
   }
 }
 
-export {};
+export type { ElectronRectangle };
