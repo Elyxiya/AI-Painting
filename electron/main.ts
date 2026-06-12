@@ -1,7 +1,8 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import log from 'electron-log/main';
+import { IPC_CHANNELS } from '../src/shared/ipc';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -53,8 +54,70 @@ function createWindow() {
   }
 }
 
+function setupIPC() {
+  log.info('[Main] Setting up IPC handlers...');
+
+  // App info
+  ipcMain.handle('get-app-version', () => app.getVersion());
+  ipcMain.handle('get-platform', () => process.platform);
+  ipcMain.handle('get-app-info', () => ({
+    version: app.getVersion(),
+    platform: process.platform,
+    electronVersion: process.versions.electron,
+    nodeVersion: process.versions.node,
+  }));
+
+  // Window controls
+  ipcMain.on(IPC_CHANNELS.WINDOW.MINIMIZE, () => {
+    mainWindow?.minimize();
+  });
+
+  ipcMain.on(IPC_CHANNELS.WINDOW.MAXIMIZE, () => {
+    if (mainWindow?.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow?.maximize();
+    }
+  });
+
+  ipcMain.on(IPC_CHANNELS.WINDOW.CLOSE, () => {
+    mainWindow?.close();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.WINDOW.GET_BOUNDS, () => {
+    return mainWindow?.getBounds();
+  });
+
+  // File dialogs
+  ipcMain.handle(IPC_CHANNELS.FILE.SHOW_OPEN_DIALOG, async () => {
+    if (!mainWindow) return null;
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openFile'],
+      filters: [
+        { name: 'AI-Painting Project', extensions: ['aip'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    });
+    return result.canceled ? null : result.filePaths[0];
+  });
+
+  ipcMain.handle(IPC_CHANNELS.FILE.SHOW_SAVE_DIALOG, async (_, defaultPath?: string) => {
+    if (!mainWindow) return null;
+    const result = await dialog.showSaveDialog(mainWindow, {
+      defaultPath,
+      filters: [
+        { name: 'AI-Painting Project', extensions: ['aip'] },
+      ],
+    });
+    return result.canceled ? null : result.filePath;
+  });
+
+  log.info('[Main] IPC handlers registered');
+}
+
 app.whenReady().then(() => {
   log.info('[Main] App ready');
+  setupIPC();
   createWindow();
 
   app.on('activate', () => {
@@ -79,6 +142,3 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (reason) => {
   log.error('[Main] Unhandled rejection:', reason);
 });
-
-ipcMain.handle('get-app-version', () => app.getVersion());
-ipcMain.handle('get-platform', () => process.platform);
