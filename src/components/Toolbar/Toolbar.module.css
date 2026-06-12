@@ -1,0 +1,107 @@
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  background-color: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  height: 100%;
+  min-width: 52px;
+  align-items: center;
+}
+
+.toolGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.toolBtn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.toolBtn:hover {
+  background-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+.toolBtn.active {
+  background-color: var(--color-accent);
+  color: #ffffff;
+  border-color: var(--color-accent);
+}
+
+.divider {
+  width: 32px;
+  height: 1px;
+  background-color: var(--color-border);
+  margin: 4px 0;
+}
+
+.colorGroup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.colorBtn {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--color-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.swapBtn {
+  width: 28px;
+  height: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.swapBtn:hover {
+  background-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+.brushGroup {
+  width: 100%;
+}
+
+.brushLabel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--color-text-secondary);
+}
+
+.brushSlider {
+  width: 36px;
+  writing-mode: vertical-lr;
+  direction: rtl;
+  cursor: pointer;
+}
+
+.brushValue {
+  font-size: 10px;
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+}
