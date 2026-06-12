@@ -6,7 +6,7 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import globals from 'globals';
 
 const browserGlobals = Object.fromEntries(
-  Object.entries(globals.browser).map(([k, v]) => [k, { ...v, type: 'readonly' }])
+  Object.entries(globals.browser).map(([k]) => [k, 'readonly'])
 );
 
 export default [
