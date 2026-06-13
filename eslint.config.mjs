@@ -10,6 +10,7 @@ const browserGlobals = {
     Object.entries(globals.browser).map(([k]) => [k, 'readonly'])
   ),
   Electron: 'readonly',
+  React: 'readonly',
 };
 
 export default [

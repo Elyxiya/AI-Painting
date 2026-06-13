@@ -166,6 +166,18 @@ export interface BrushSettings {
   hardness: number;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 绘图工具状态（运行时，不持久化）
+// ═══════════════════════════════════════════════════════════════
+
+export interface DrawingState {
+  isDrawing: boolean;
+  startPoint: Point | null;
+  currentPoint: Point | null;
+  tempPoints: number[];
+  tempShapeId: string | null;
+}
+
 export interface ToolState {
   activeTool: ToolType;
   brush: BrushSettings;
@@ -174,7 +186,12 @@ export interface ToolState {
     secondary: string;
     recent: string[];
   };
+  drawing: DrawingState;
 }
+
+// ═══════════════════════════════════════════════════════════════
+// UI 相关类型
+// ═══════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════
 // 语音相关类型
