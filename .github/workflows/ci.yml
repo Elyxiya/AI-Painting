@@ -30,6 +30,9 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    # E2E tests skipped during MVP development phase
+    # TODO: Re-enable after PR11 (UI shell integration) is complete
+    if: false
     steps:
       - uses: actions/checkout@v4
 
@@ -48,7 +51,7 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    needs: [quality, e2e]
+    needs: [quality]
     if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4

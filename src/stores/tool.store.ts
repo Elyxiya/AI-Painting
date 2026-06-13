@@ -4,6 +4,7 @@ import {
   type ToolType,
   type BrushSettings,
   type ToolState,
+  type DrawingState,
 } from '@/shared/types';
 import {
   DEFAULT_BRUSH_COLOR,
@@ -27,7 +28,21 @@ interface ToolStore extends ToolState {
   setSecondaryColor: (color: string) => void;
   addRecentColor: (color: string) => void;
   swapColors: () => void;
+
+  // Drawing state
+  startDrawing: (x: number, y: number) => void;
+  updateDrawing: (x: number, y: number) => void;
+  updateTempPoints: (points: number[]) => void;
+  endDrawing: () => void;
 }
+
+const DEFAULT_DRAWING: DrawingState = {
+  isDrawing: false,
+  startPoint: null,
+  currentPoint: null,
+  tempPoints: [],
+  tempShapeId: null,
+};
 
 export const useToolStore = create<ToolStore>()(
   persist(
@@ -46,6 +61,8 @@ export const useToolStore = create<ToolStore>()(
         secondary: '#ffffff',
         recent: [],
       },
+
+      drawing: DEFAULT_DRAWING,
 
       setActiveTool: (tool) => {
         set({ activeTool: tool });
@@ -110,6 +127,33 @@ export const useToolStore = create<ToolStore>()(
             color: state.colors.secondary,
           },
         }));
+      },
+
+      startDrawing: (x, y) => {
+        set((state) => ({
+          drawing: {
+            ...state.drawing,
+            isDrawing: true,
+            startPoint: { x, y },
+            currentPoint: { x, y },
+          },
+        }));
+      },
+
+      updateDrawing: (x, y) => {
+        set((state) => ({
+          drawing: { ...state.drawing, currentPoint: { x, y } },
+        }));
+      },
+
+      updateTempPoints: (points) => {
+        set((state) => ({
+          drawing: { ...state.drawing, tempPoints: points },
+        }));
+      },
+
+      endDrawing: () => {
+        set({ drawing: DEFAULT_DRAWING });
       },
     }),
     {
