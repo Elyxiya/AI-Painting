@@ -1,25 +1,34 @@
-import { test, expect } from 'vitest';
+import { test, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+
+vi.mock('@/components/canvas/Canvas', () => ({
+  Canvas: () => <div data-testid="mock-canvas">Canvas</div>,
+}));
+
 import App from './App';
 
 test('App renders without crashing', () => {
   render(<App />);
-  expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+  expect(screen.getByTestId('mock-canvas')).toBeInTheDocument();
 });
 
-test('App displays AI-Painting title', () => {
+test('App renders toolbar with tool buttons', () => {
   render(<App />);
-  expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('AI-Painting');
+  expect(screen.getByTitle('选择')).toBeInTheDocument();
+  expect(screen.getByTitle('画笔')).toBeInTheDocument();
+  expect(screen.getByTitle('橡皮')).toBeInTheDocument();
 });
 
-test('App shows status panel', () => {
+test('App renders brush size control', () => {
   render(<App />);
-  expect(screen.getByTestId('app-status')).toHaveTextContent('就绪');
+  expect(screen.getByTitle('前景色')).toBeInTheDocument();
+  const slider = screen.getByRole('slider');
+  expect(slider).toBeInTheDocument();
 });
 
-test('App shows feature list', () => {
+test('App renders canvas area', () => {
   render(<App />);
-  expect(screen.getByText('画布引擎 (Konva.js)')).toBeInTheDocument();
-  expect(screen.getByText('语音交互 (Whisper)')).toBeInTheDocument();
-  expect(screen.getByText('文件保存 (JSON + PNG)')).toBeInTheDocument();
+  const appDiv = document.getElementById('app');
+  expect(appDiv).toBeInTheDocument();
+  expect(screen.getByTestId('mock-canvas')).toBeInTheDocument();
 });
