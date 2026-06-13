@@ -1,5 +1,6 @@
 import { Canvas } from '@/components/canvas/Canvas';
 import { Toolbar } from '@/components/Toolbar/Toolbar';
+import { LayerPanel } from '@/components/LayerPanel/LayerPanel';
 import { useToolStore } from '@/stores/tool.store';
 import styles from './App.module.css';
 
@@ -15,6 +16,9 @@ function App() {
         />
         <div className={styles.canvasArea}>
           <Canvas />
+        </div>
+        <div className={styles.sidebar}>
+          <LayerPanel />
         </div>
       </div>
     </div>

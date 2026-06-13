@@ -36,6 +36,7 @@ function createInitialState(): CanvasState {
     layers: { [DEFAULT_LAYER_ID]: defaultLayer },
     shapes: {},
     layerOrder: [DEFAULT_LAYER_ID],
+    activeLayerId: DEFAULT_LAYER_ID,
     selection: {
       shapeIds: [],
       bounds: null,
@@ -60,6 +61,7 @@ interface CanvasStore extends CanvasState {
   updateLayer: (id: string, updates: Partial<Layer>) => void;
   deleteLayer: (id: string) => void;
   reorderLayers: (newOrder: string[]) => void;
+  setActiveLayer: (id: string) => void;
 
   // Selection
   select: (shapeIds: string[]) => void;
@@ -77,6 +79,7 @@ interface CanvasStore extends CanvasState {
   loadState: (state: CanvasState) => void;
   reset: () => void;
   getActiveLayerId: () => string;
+  canDrawOnActiveLayer: () => boolean;
 }
 
 export const useCanvasStore = create<CanvasStore>()(
@@ -139,6 +142,8 @@ export const useCanvasStore = create<CanvasStore>()(
         };
         state.layers[id] = layer;
         state.layerOrder.push(id);
+        // Newly added layer becomes the active drawing target.
+        state.activeLayerId = id;
       });
 
       return id;
@@ -169,6 +174,18 @@ export const useCanvasStore = create<CanvasStore>()(
         s.selection.shapeIds = s.selection.shapeIds.filter(
           (sid: string) => !layer.shapeIds.includes(sid),
         );
+        // If we deleted the active layer, fall back to the first remaining layer.
+        if (s.activeLayerId === id) {
+          s.activeLayerId = s.layerOrder[0] ?? DEFAULT_LAYER_ID;
+        }
+      });
+    },
+
+    setActiveLayer: (id) => {
+      set((state) => {
+        if (state.layers[id]) {
+          state.activeLayerId = id;
+        }
       });
     },
 
@@ -225,8 +242,11 @@ export const useCanvasStore = create<CanvasStore>()(
     },
 
     getActiveLayerId: () => {
-      const { layerOrder, layers } = get();
-      // Return the first visible, unlocked layer
+      const { activeLayerId, layerOrder, layers } = get();
+      const active = layers[activeLayerId];
+      if (active && active.visible && !active.locked) {
+        return activeLayerId;
+      }
       for (const id of layerOrder) {
         const layer = layers[id];
         if (layer && layer.visible && !layer.locked) {
@@ -234,6 +254,13 @@ export const useCanvasStore = create<CanvasStore>()(
         }
       }
       return layerOrder[0] ?? DEFAULT_LAYER_ID;
+    },
+
+    canDrawOnActiveLayer: () => {
+      const { activeLayerId, layers } = get();
+      const layer = layers[activeLayerId];
+      if (!layer) return false;
+      return layer.visible && !layer.locked;
     },
   })),
 );
