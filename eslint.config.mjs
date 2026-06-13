@@ -5,9 +5,12 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import globals from 'globals';
 
-const browserGlobals = Object.fromEntries(
-  Object.entries(globals.browser).map(([k]) => [k, 'readonly'])
-);
+const browserGlobals = {
+  ...Object.fromEntries(
+    Object.entries(globals.browser).map(([k]) => [k, 'readonly'])
+  ),
+  Electron: 'readonly',
+};
 
 export default [
   js.configs.recommended,
