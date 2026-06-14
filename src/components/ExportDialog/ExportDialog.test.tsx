@@ -25,7 +25,7 @@ describe('ExportDialog', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockExportImage.mockResolvedValue('/path/to/exported.png');
+    mockExportImage.mockReturnValue('/path/to/exported.png');
   });
 
   it('renders format selection (PNG/JPEG)', () => {
@@ -120,7 +120,7 @@ describe('ExportDialog', () => {
 
   it('calls onExportSuccess with path when export succeeds', async () => {
     const user = userEvent.setup();
-    mockExportImage.mockResolvedValueOnce('/path/to/drawing.png');
+    mockExportImage.mockReturnValueOnce('/path/to/drawing.png');
     render(<ExportDialog {...defaultProps} />);
 
     await user.click(screen.getByTestId('btn-export'));
@@ -132,7 +132,9 @@ describe('ExportDialog', () => {
 
   it('displays error message when export fails', async () => {
     const user = userEvent.setup();
-    mockExportImage.mockRejectedValueOnce(new Error('保存失败'));
+    mockExportImage.mockImplementationOnce(() => {
+      throw new Error('保存失败');
+    });
     render(<ExportDialog {...defaultProps} />);
 
     await user.click(screen.getByTestId('btn-export'));
@@ -145,7 +147,9 @@ describe('ExportDialog', () => {
   it('calls onExportError when export fails', async () => {
     const user = userEvent.setup();
     const error = new Error('导出错误');
-    mockExportImage.mockRejectedValueOnce(error);
+    mockExportImage.mockImplementationOnce(() => {
+      throw error;
+    });
     render(<ExportDialog {...defaultProps} />);
 
     await user.click(screen.getByTestId('btn-export'));
@@ -175,20 +179,28 @@ describe('ExportDialog', () => {
 
   it('shows "导出中..." text while exporting', async () => {
     const user = userEvent.setup();
-    mockExportImage.mockImplementation(
-      () => new Promise((resolve) => setTimeout(() => resolve('/path/to/file.png'), 100)),
+    let resolveExport!: (value: string) => void;
+    mockExportImage.mockImplementationOnce(
+      () => new Promise<string>((resolve) => {
+        resolveExport = resolve;
+      }),
     );
     render(<ExportDialog {...defaultProps} />);
 
     await user.click(screen.getByTestId('btn-export'));
 
     expect(screen.getByTestId('btn-export')).toHaveTextContent('导出中...');
+
+    resolveExport('/path/to/file.png');
   });
 
   it('disables buttons while exporting', async () => {
     const user = userEvent.setup();
-    mockExportImage.mockImplementation(
-      () => new Promise((resolve) => setTimeout(() => resolve('/path/to/file.png'), 100)),
+    let resolveExport!: (value: string) => void;
+    mockExportImage.mockImplementationOnce(
+      () => new Promise<string>((resolve) => {
+        resolveExport = resolve;
+      }),
     );
     render(<ExportDialog {...defaultProps} />);
 
@@ -196,5 +208,7 @@ describe('ExportDialog', () => {
 
     expect(screen.getByTestId('btn-export')).toBeDisabled();
     expect(screen.getByTestId('btn-cancel-export')).toBeDisabled();
+
+    resolveExport('/path/to/file.png');
   });
 });
