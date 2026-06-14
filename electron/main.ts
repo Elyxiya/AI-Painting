@@ -116,10 +116,33 @@ function setupIPC() {
   log.info('[Main] IPC handlers registered');
 }
 
+function setupWakeWordIPC() {
+  log.info('[Main] Setting up Wake Word IPC handlers (stub - v2)');
+
+  ipcMain.on(IPC_CHANNELS.WAKE_WORD.START, () => {
+    log.info('[WakeWord] Start (stub - no-op)');
+    const mainWindow = BrowserWindow.getAllWindows()[0];
+    if (mainWindow) {
+      mainWindow.webContents.send(IPC_CHANNELS.WAKE_WORD.ERROR, 'Wake word detection requires v3 Porcupine integration');
+    }
+  });
+
+  ipcMain.on(IPC_CHANNELS.WAKE_WORD.STOP, () => {
+    log.info('[WakeWord] Stop (stub)');
+  });
+
+  ipcMain.handle(IPC_CHANNELS.WAKE_WORD.STATUS, () => {
+    return { available: false, reason: 'Porcupine WASM integration scheduled for v3' };
+  });
+
+  log.info('[Main] Wake Word IPC handlers registered (stub)');
+}
+
 app.whenReady().then(() => {
   log.info('[Main] App ready');
   setupIPC();
   registerFileIPC();
+  setupWakeWordIPC();
   createWindow();
 
   app.on('activate', () => {

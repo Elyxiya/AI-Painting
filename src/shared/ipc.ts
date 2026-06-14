@@ -20,6 +20,14 @@ export const IPC_CHANNELS = {
     GET_THUMBNAIL: 'project:get-thumbnail',
   },
 
+  WAKE_WORD: {
+    START: 'wake-word:start',
+    STOP: 'wake-word:stop',
+    DETECTED: 'wake-word:detected',
+    ERROR: 'wake-word:error',
+    STATUS: 'wake-word:status',
+  },
+
   WINDOW: {
     MINIMIZE: 'window:minimize',
     MAXIMIZE: 'window:maximize',

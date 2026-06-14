@@ -24,6 +24,13 @@ export interface ElectronAPI {
     open: (filePath?: string) => Promise<string | null>;
     new: () => Promise<unknown>;
   };
+  wakeWord: {
+    start: () => void;
+    stop: () => void;
+    getStatus: () => Promise<{ available: boolean; reason?: string }>;
+    onDetected: (callback: () => void) => () => void;
+    onError: (callback: (error: string) => void) => () => void;
+  };
 }
 
 const electronAPI: ElectronAPI = {
@@ -50,6 +57,22 @@ const electronAPI: ElectronAPI = {
     save: (json: string, filePath?: string) => ipcRenderer.invoke('file:save', json, filePath),
     open: (filePath?: string) => ipcRenderer.invoke('file:open', filePath),
     new: () => ipcRenderer.invoke('file:new'),
+  },
+
+  wakeWord: {
+    start: () => ipcRenderer.send(IPC_CHANNELS.WAKE_WORD.START),
+    stop: () => ipcRenderer.send(IPC_CHANNELS.WAKE_WORD.STOP),
+    getStatus: () => ipcRenderer.invoke(IPC_CHANNELS.WAKE_WORD.STATUS),
+    onDetected: (callback) => {
+      const handler = () => callback();
+      ipcRenderer.on(IPC_CHANNELS.WAKE_WORD.DETECTED, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.WAKE_WORD.DETECTED, handler);
+    },
+    onError: (callback) => {
+      const handler = (_: Electron.IpcRendererEvent, error: string) => callback(error);
+      ipcRenderer.on(IPC_CHANNELS.WAKE_WORD.ERROR, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.WAKE_WORD.ERROR, handler);
+    },
   },
 };
 
