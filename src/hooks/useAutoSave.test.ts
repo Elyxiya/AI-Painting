@@ -129,7 +129,7 @@ describe('useAutoSave', () => {
     expect(mockSave).not.toHaveBeenCalled();
   });
 
-  it('handles save failure gracefully', async () => {
+  it('handles save failure with full retry exhaustion (v2 behaviour)', async () => {
     mockSave.mockRejectedValue(new Error('Disk full'));
 
     renderHook(() => useAutoSave({ interval: 60_000 }));
@@ -138,9 +138,20 @@ describe('useAutoSave', () => {
       useFileStore.getState().markModified();
     });
 
+    // Tick 1: first attempt fails.
     await act(async () => {
-      vi.advanceTimersByTime(60_000);
-      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+
+    // Retries 1/2/3 with 1s/2s/4s backoff — final attempt trips MAX_RETRIES.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_000);
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2_000);
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(4_000);
     });
 
     expect(useFileStore.getState().status).toBe('error');
@@ -160,6 +171,133 @@ describe('useAutoSave', () => {
 
     act(() => {
       vi.advanceTimersByTime(1);
+    });
+    expect(mockSave).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('useAutoSave — retry queue (v2)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    mockSave.mockReset();
+    useFileStore.getState().reset();
+    useCanvasStore.getState().reset();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.clearAllMocks();
+  });
+
+  it('retries after a transient failure (1s backoff) and then succeeds', async () => {
+    mockSave
+      .mockRejectedValueOnce(new Error('Disk full'))
+      .mockResolvedValueOnce(undefined);
+
+    renderHook(() => useAutoSave({ interval: 60_000 }));
+
+    act(() => {
+      useFileStore.getState().markModified();
+    });
+
+    // First save fires at the interval tick and fails.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+    expect(mockSave).toHaveBeenCalledTimes(1);
+    // After the catch, status is back to 'modified' (status gate resumes)
+    // and the retry is scheduled for +1s. lastError is recorded.
+    expect(useFileStore.getState().saveRetries).toBe(1);
+    expect(useFileStore.getState().status).toBe('modified');
+    expect(useFileStore.getState().lastError).toBe('Disk full');
+
+    // First retry (1s) succeeds — retry counter resets, status → saved.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_000);
+    });
+    expect(mockSave).toHaveBeenCalledTimes(2);
+    expect(useFileStore.getState().status).toBe('saved');
+    expect(useFileStore.getState().saveRetries).toBe(0);
+    expect(useFileStore.getState().lastError).toBeNull();
+  });
+
+  it('exhausts 3 retries with backoff 1s/2s/4s and ends in error', async () => {
+    mockSave.mockRejectedValue(new Error('Disk full'));
+
+    renderHook(() => useAutoSave({ interval: 60_000 }));
+
+    act(() => {
+      useFileStore.getState().markModified();
+    });
+
+    // Tick 1: first attempt fails.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+    expect(mockSave).toHaveBeenCalledTimes(1);
+
+    // Retry 1 (after 1s).
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_000);
+    });
+    expect(mockSave).toHaveBeenCalledTimes(2);
+
+    // Retry 2 (after 2s more).
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2_000);
+    });
+    expect(mockSave).toHaveBeenCalledTimes(3);
+
+    // Retry 3 (after 4s more) — this one trips the MAX_RETRIES check and
+    // surfaces a final error banner.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(4_000);
+    });
+    expect(mockSave).toHaveBeenCalledTimes(4);
+    expect(useFileStore.getState().status).toBe('error');
+    expect(useFileStore.getState().lastError).toBe('保存失败，请手动保存');
+  });
+
+  it('tracks saveRetries counter and lastError message per attempt', async () => {
+    mockSave.mockRejectedValueOnce(new Error('EIO')).mockResolvedValueOnce(undefined);
+
+    renderHook(() => useAutoSave({ interval: 60_000 }));
+
+    act(() => {
+      useFileStore.getState().markModified();
+    });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+    expect(useFileStore.getState().saveRetries).toBe(1);
+    expect(useFileStore.getState().lastError).toBe('EIO');
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_000);
+    });
+    // After success, counter and error are cleared.
+    expect(useFileStore.getState().saveRetries).toBe(0);
+    expect(useFileStore.getState().lastError).toBeNull();
+  });
+
+  it('does not schedule additional retries after a successful save', async () => {
+    mockSave.mockResolvedValue(undefined);
+
+    renderHook(() => useAutoSave({ interval: 60_000 }));
+
+    act(() => {
+      useFileStore.getState().markModified();
+    });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+    expect(mockSave).toHaveBeenCalledTimes(1);
+
+    // Advance well past all backoff windows — no extra calls expected.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000);
     });
     expect(mockSave).toHaveBeenCalledTimes(1);
   });

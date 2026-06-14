@@ -265,6 +265,8 @@ export interface FileState {
     interval: number;
     lastSave: number | null;
   };
+  saveRetries: number;
+  lastError: string | null;
 }
 
 // ═══════════════════════════════════════════════════════════════
