@@ -1,11 +1,28 @@
 import type { Command } from './commandParser';
-import type { ShapeType, Shape } from '@/shared/types';
+import type {
+  ShapeType,
+  Shape,
+  RectangleShape,
+  EllipseShape,
+  LineShape,
+  PathShape,
+  TextShape,
+  ImageShape,
+} from '@/shared/types';
+
+type ShapeData =
+  | Omit<RectangleShape, 'id' | 'layerId'>
+  | Omit<EllipseShape, 'id' | 'layerId'>
+  | Omit<LineShape, 'id' | 'layerId'>
+  | Omit<PathShape, 'id' | 'layerId'>
+  | Omit<TextShape, 'id' | 'layerId'>
+  | Omit<ImageShape, 'id' | 'layerId'>;
 
 interface ExecuteContext {
   canvasStore: {
     getState: () => {
       getActiveLayerId: () => string;
-      addShape: (shape: Omit<Shape, 'id'> & { layerId?: string }) => string;
+      addShape: (shape: ShapeData & { layerId?: string }) => string;
       deleteShape: (id: string) => void;
       shapes: Record<string, Shape>;
       selection: { shapeIds: string[] };
@@ -62,7 +79,7 @@ function createShapeData(
   shapeType: ShapeType,
   color: string,
   layerId: string,
-): Omit<Shape, 'id'> {
+): ShapeData {
   const base = {
     name: shapeType,
     visible: true,
