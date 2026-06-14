@@ -23,6 +23,7 @@ vi.mock('@/services/fileService', () => ({
       activeLayerId: '',
       selection: { shapeIds: [], bounds: null },
       viewport: { x: 0, y: 0, scale: 1, rotation: 0 },
+      isExporting: false,
     },
     tool: {
       activeTool: 'select',
@@ -40,7 +41,7 @@ vi.mock('@/services/fileService', () => ({
     ui: {
       language: 'zh-CN',
       theme: 'light',
-      sidebar: { visible: true, width: 250, activeTab: 'layers' },
+      sidebar: { visible: true, width: 250, activeTab: 'layers' as const },
     },
   }),
 }));
@@ -89,7 +90,6 @@ describe('useAutoSave', () => {
     });
     expect(useFileStore.getState().status).toBe('modified');
 
-    // Advance just enough to trigger one tick and let its microtask resolve.
     await act(async () => {
       vi.advanceTimersByTime(60_000);
       await Promise.resolve();
@@ -129,7 +129,7 @@ describe('useAutoSave', () => {
     expect(mockSave).not.toHaveBeenCalled();
   });
 
-  it('handles save failure gracefully', async () => {
+  it('handles save failure gracefully with retry', async () => {
     mockSave.mockRejectedValue(new Error('Disk full'));
 
     renderHook(() => useAutoSave({ interval: 60_000 }));
@@ -138,9 +138,24 @@ describe('useAutoSave', () => {
       useFileStore.getState().markModified();
     });
 
+    // Trigger first save attempt at the interval (60s) — fails and schedules retry.
     await act(async () => {
-      vi.advanceTimersByTime(60_000);
-      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+    // savingRef was reset in the finally block, so the next retry can run.
+    // First retry is scheduled at +1s, but the interval also fires again at +60s.
+    // Only the retry will run (because savingRef is true initially after interval fires).
+    // Run the pending retry (1s delay) so attempt 2 executes.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_000);
+    });
+    // Second retry (2s delay) → attempt 3.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2_000);
+    });
+    // Third retry (4s delay) → attempt 4 → retries 3 >= MAX_RETRIES(3) → error.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(4_000);
     });
 
     expect(useFileStore.getState().status).toBe('error');

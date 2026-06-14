@@ -19,6 +19,11 @@ interface FileStore extends FileState {
   setAutoSaveInterval: (interval: number) => void;
   updateLastSave: (timestamp: number) => void;
 
+  // Retry tracking
+  incrementSaveRetry: () => void;
+  resetSaveRetry: () => void;
+  setLastError: (message: string | null) => void;
+
   // Reset
   reset: () => void;
 }
@@ -31,6 +36,8 @@ const initialState: FileState = {
     interval: AUTO_SAVE_INTERVAL,
     lastSave: null,
   },
+  saveRetries: 0,
+  lastError: null,
 };
 
 export const useFileStore = create<FileStore>()((set) => ({
@@ -45,7 +52,7 @@ export const useFileStore = create<FileStore>()((set) => ({
   },
 
   setSaving: () => {
-    set({ status: 'saving' });
+    set({ status: 'saving', lastError: null });
   },
 
   setError: () => {
@@ -89,6 +96,18 @@ export const useFileStore = create<FileStore>()((set) => ({
       autoSave: { ...state.autoSave, lastSave: timestamp },
       status: 'saved',
     }));
+  },
+
+  incrementSaveRetry: () => {
+    set((state) => ({ saveRetries: state.saveRetries + 1 }));
+  },
+
+  resetSaveRetry: () => {
+    set({ saveRetries: 0, lastError: null });
+  },
+
+  setLastError: (message) => {
+    set({ lastError: message });
   },
 
   reset: () => {
