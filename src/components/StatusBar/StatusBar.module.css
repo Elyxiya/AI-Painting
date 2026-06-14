@@ -1,0 +1,39 @@
+.statusBar {
+  display: flex;
+  align-items: center;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  border-radius: 4px;
+  min-width: 80px;
+  transition: background-color 0.2s ease;
+}
+
+.statusText {
+  font-weight: 500;
+}
+
+.status-new {
+  background-color: #e0e0e0;
+  color: #666666;
+}
+
+.status-saved {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-modified {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-saving {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.status-error {
+  background-color: #f8d7da;
+  color: #721c24;
+}
