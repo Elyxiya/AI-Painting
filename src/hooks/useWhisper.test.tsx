@@ -8,17 +8,18 @@ vi.mock('uuid', () => ({
   v4: vi.fn(() => 'mock-uuid'),
 }));
 
-// Mock whisper service
-const mockTranscribe = vi.hoisted(() => vi.fn());
+// Mock object must be hoisted so vi.mock can reference it
+const mockTranscriberObj = vi.hoisted(() => ({
+  transcribe: vi.fn<() => Promise<string>>(),
+  engine: 'mock' as const,
+}));
 
+// Mock whisper service — createTranscriber is now async so factory must return Promise
 vi.mock('@/services/whisper.service', () => ({
-  mockTranscriber: {
-    transcribe: mockTranscribe,
-  },
-  createTranscriber: vi.fn(() => mockTranscribe),
-  default: {
-    transcribe: mockTranscribe,
-  },
+  createTranscriber: vi.fn(async () => mockTranscriberObj),
+  getTranscriberEngine: vi.fn(() => 'mock'),
+  mockTranscriber: mockTranscriberObj,
+  default: mockTranscriberObj,
 }));
 
 describe('useWhisper', () => {

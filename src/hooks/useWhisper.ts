@@ -1,6 +1,7 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useEffect, useState } from 'react';
 import { useVoiceStore } from '@/stores/voice.store';
-import { default as transcriber } from '@/services/whisper.service';
+import { createTranscriber, getTranscriberEngine } from '@/services/whisper.service';
+import type { Transcriber } from '@/services/whisper.service';
 import type { VoiceCommand } from '@/shared/types';
 
 export interface UseWhisperReturn {
@@ -12,6 +13,8 @@ export interface UseWhisperReturn {
   language: string;
   continuousMode: boolean;
   commandQueue: VoiceCommand[];
+  engine: string;
+  isReady: boolean;
 
   startRecording: () => void;
   stopRecording: () => void;
@@ -30,6 +33,9 @@ export interface UseWhisperReturn {
 export function useWhisper(): UseWhisperReturn {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const transcriberRef = useRef<Transcriber | null>(null);
+  const [isReady, setIsReady] = useState(false);
+  const [engine, setEngine] = useState<string>('mock');
 
   const transcription = useVoiceStore((s) => s.transcription);
   const commandQueue = useVoiceStore((s) => s.commandQueue);
@@ -49,6 +55,23 @@ export function useWhisper(): UseWhisperReturn {
   const resetAction = useVoiceStore((s) => s.reset);
   const setStatus = useVoiceStore((s) => s.setStatus);
 
+  // Initialize transcriber once
+  useEffect(() => {
+    let mounted = true;
+    createTranscriber().then((t) => {
+      if (!mounted) return;
+      transcriberRef.current = t;
+      setEngine(getTranscriberEngine());
+      setIsReady(true);
+    }).catch(() => {
+      if (!mounted) return;
+      setErrorAction('语音引擎初始化失败');
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [setErrorAction]);
+
   const startRecording = useCallback(() => {
     audioChunksRef.current = [];
 
@@ -67,12 +90,19 @@ export function useWhisper(): UseWhisperReturn {
         mediaRecorder.onstop = async () => {
           const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
 
+          if (!transcriberRef.current) {
+            setErrorAction('语音引擎未就绪');
+            setStatus('idle');
+            return;
+          }
+
           try {
-            const text = await transcriber.transcribe(audioBlob);
+            const text = await transcriberRef.current.transcribe(audioBlob);
             setTranscript(text);
             setStatus('idle');
           } catch (err) {
-            setErrorAction(err instanceof Error ? err.message : 'Transcription failed');
+            setErrorAction(err instanceof Error ? err.message : '识别失败');
+            setStatus('error');
           }
         };
 
@@ -80,7 +110,7 @@ export function useWhisper(): UseWhisperReturn {
         startRecordingAction();
       })
       .catch((err) => {
-        setErrorAction(err instanceof Error ? err.message : 'Failed to access microphone');
+        setErrorAction(err instanceof Error ? err.message : '无法访问麦克风');
       });
   }, [startRecordingAction, setTranscript, setErrorAction, setStatus]);
 
@@ -101,6 +131,8 @@ export function useWhisper(): UseWhisperReturn {
     language: settings.language,
     continuousMode: settings.continuousMode,
     commandQueue,
+    engine,
+    isReady,
 
     startRecording,
     stopRecording,
