@@ -13,6 +13,21 @@ const browserGlobals = {
   React: 'readonly',
 };
 
+const testGlobals = {
+  ...Object.fromEntries(
+    Object.entries(globals.node).map(([k]) => [k, 'readonly'])
+  ),
+  vi: 'readonly',
+  describe: 'readonly',
+  it: 'readonly',
+  test: 'readonly',
+  expect: 'readonly',
+  beforeAll: 'readonly',
+  beforeEach: 'readonly',
+  afterAll: 'readonly',
+  afterEach: 'readonly',
+};
+
 export default [
   js.configs.recommended,
   {
@@ -37,6 +52,12 @@ export default [
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       'no-console': ['warn', { allow: ['warn', 'error'] }],
+    },
+  },
+  {
+    files: ['**/*.test.{ts,tsx}', '**/test/**/*.{ts,tsx}'],
+    languageOptions: {
+      globals: testGlobals,
     },
   },
   {

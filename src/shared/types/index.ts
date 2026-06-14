@@ -137,6 +137,7 @@ export interface CanvasState {
   layers: Record<string, Layer>;
   shapes: Record<string, Shape>;
   layerOrder: string[];
+  activeLayerId: string;
   selection: {
     shapeIds: string[];
     bounds: Bounds | null;
