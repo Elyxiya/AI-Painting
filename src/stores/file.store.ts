@@ -5,6 +5,10 @@ import { AUTO_SAVE_INTERVAL } from '@/shared/constants';
 interface FileStore extends FileState {
   // File status
   setStatus: (status: FileStatus) => void;
+  markModified: () => void;
+  setSaving: () => void;
+  setError: () => void;
+  setSaved: () => void;
 
   // Project
   setCurrentProject: (project: ProjectFile | null) => void;
@@ -34,6 +38,25 @@ export const useFileStore = create<FileStore>()((set) => ({
 
   setStatus: (status) => {
     set({ status });
+  },
+
+  markModified: () => {
+    set({ status: 'modified' });
+  },
+
+  setSaving: () => {
+    set({ status: 'saving' });
+  },
+
+  setError: () => {
+    set({ status: 'error' });
+  },
+
+  setSaved: () => {
+    set((state) => ({
+      status: 'saved',
+      autoSave: { ...state.autoSave, lastSave: Date.now() },
+    }));
   },
 
   setCurrentProject: (project) => {
