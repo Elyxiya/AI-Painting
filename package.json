@@ -16,7 +16,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "electron:dev": "vite --mode electron",
-    "electron:build": "npm run build && electron-builder"
+    "electron:build": "npm run build && electron-builder",
+    "build:win": "npm run build && electron-builder --win"
   },
   "dependencies": {
     "electron-log": "^5.2.4",
