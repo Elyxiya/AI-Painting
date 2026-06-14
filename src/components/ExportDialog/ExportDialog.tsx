@@ -27,8 +27,8 @@ export const ExportDialog: FC<ExportDialogProps> = ({
     setError(null);
 
     try {
-      const savedPath = await exportImage(stage, format, pixelRatio);
-      onExportSuccess?.(savedPath);
+      const filename = await exportImage(stage, format, pixelRatio);
+      onExportSuccess?.(filename);
       onClose();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '导出失败';

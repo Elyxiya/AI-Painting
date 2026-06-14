@@ -1,20 +1,36 @@
 import type { Stage } from 'konva/lib/Stage';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { exportToDataURL, exportImage } from './exportService';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { exportToDataURL, exportImage, downloadDataURL } from './exportService';
 
-// Mock electronAPI via stubGlobal
-const mockExportPng = vi.fn().mockResolvedValue('/path/to/exported.png');
-const mockExportJpeg = vi.fn().mockResolvedValue('/path/to/exported.jpg');
+// Mock anchor click and document.body to capture download
+const mockClick = vi.fn();
+const mockCreateElement = vi.fn();
+const originalCreateElement = document.createElement.bind(document);
+const originalAppendChild = document.body.appendChild.bind(document);
+const originalRemoveChild = document.body.removeChild.bind(document);
 
 beforeEach(() => {
-  vi.stubGlobal('window', {
-    electronAPI: {
-      file: {
-        exportPng: mockExportPng,
-        exportJpeg: mockExportJpeg,
-      },
-    },
+  vi.clearAllMocks();
+  mockCreateElement.mockImplementation((tag: string) => {
+    if (tag === 'a') {
+      return {
+        href: '',
+        download: '',
+        click: mockClick,
+      };
+    }
+    return originalCreateElement(tag);
   });
+  document.createElement = mockCreateElement as unknown as typeof document.createElement;
+  document.body.appendChild = vi.fn() as unknown as typeof document.body.appendChild;
+  document.body.removeChild = vi.fn() as unknown as typeof document.body.removeChild;
+});
+
+afterEach(() => {
+  document.createElement = originalCreateElement;
+  document.body.appendChild = originalAppendChild;
+  document.body.removeChild = originalRemoveChild;
+  vi.restoreAllMocks();
 });
 
 describe('exportService', () => {
@@ -80,58 +96,61 @@ describe('exportService', () => {
     });
   });
 
-  describe('exportImage', () => {
-    beforeEach(() => {
-      vi.clearAllMocks();
+  describe('downloadDataURL', () => {
+    it('creates an anchor with href and download attrs and clicks it', () => {
+      const dataURL = 'data:image/png;base64,XYZ';
+      const filename = 'test.png';
+
+      const result = downloadDataURL(dataURL, filename);
+
+      expect(mockCreateElement).toHaveBeenCalledWith('a');
+      expect(mockClick).toHaveBeenCalled();
+      expect(result).toBe(filename);
     });
 
-    it('generates dataURL and calls IPC exportPng for PNG format', async () => {
+    it('appends and removes the anchor from the document body', () => {
+      downloadDataURL('data:image/png;base64,X', 'file.png');
+      expect(document.body.appendChild).toHaveBeenCalled();
+      expect(document.body.removeChild).toHaveBeenCalled();
+    });
+  });
+
+  describe('exportImage', () => {
+    it('generates dataURL and triggers download for PNG format', async () => {
       const mockStage = {
         toDataURL: vi.fn().mockReturnValue('data:image/png;base64,PNG_DATA'),
       } as unknown as Stage;
 
-      const result = await exportImage(mockStage, 'png', 1, '/custom/path.png');
+      const result = await exportImage(mockStage, 'png', 1, 'custom.png');
 
       expect(mockStage.toDataURL).toHaveBeenCalledWith({
         pixelRatio: 1,
         mimeType: 'image/png',
       });
-      expect(mockExportPng).toHaveBeenCalledWith({
-        dataURL: 'data:image/png;base64,PNG_DATA',
-        format: 'png',
-        path: '/custom/path.png',
-      });
-      expect(result).toBe('/path/to/exported.png');
+      expect(mockClick).toHaveBeenCalled();
+      expect(result).toBe('custom.png');
     });
 
-    it('generates dataURL and calls IPC exportPng for JPEG format', async () => {
-      mockExportPng.mockResolvedValueOnce('/path/to/exported.jpg');
+    it('generates dataURL and triggers download for JPEG format', async () => {
       const mockStage = {
         toDataURL: vi.fn().mockReturnValue('data:image/jpeg;base64,JPEG_DATA'),
       } as unknown as Stage;
 
-      const result = await exportImage(mockStage, 'jpeg', 2);
+      const result = await exportImage(mockStage, 'jpeg', 2, 'photo.jpg');
 
       expect(mockStage.toDataURL).toHaveBeenCalledWith({
         pixelRatio: 2,
         mimeType: 'image/jpeg',
       });
-      expect(mockExportPng).toHaveBeenCalledWith({
-        dataURL: 'data:image/jpeg;base64,JPEG_DATA',
-        format: 'jpeg',
-        path: undefined,
-      });
-      expect(result).toBe('/path/to/exported.jpg');
+      expect(result).toBe('photo.jpg');
     });
 
     it('passes pixelRatio 2x correctly', async () => {
-      mockExportPng.mockResolvedValueOnce('/path/to/2x.png');
       const mockStage = {
         toDataURL: vi.fn().mockReturnValue('data:image/png;base64,2X'),
       } as unknown as Stage;
 
       await exportImage(mockStage, 'png', 2);
-
       expect(mockStage.toDataURL).toHaveBeenCalledWith({
         pixelRatio: 2,
         mimeType: 'image/png',
@@ -139,42 +158,47 @@ describe('exportService', () => {
     });
 
     it('passes pixelRatio 3x correctly', async () => {
-      mockExportPng.mockResolvedValueOnce('/path/to/3x.png');
       const mockStage = {
         toDataURL: vi.fn().mockReturnValue('data:image/png;base64,3X'),
       } as unknown as Stage;
 
       await exportImage(mockStage, 'png', 3);
-
       expect(mockStage.toDataURL).toHaveBeenCalledWith({
         pixelRatio: 3,
         mimeType: 'image/png',
       });
     });
 
-    it('returns the saved file path from IPC', async () => {
-      mockExportPng.mockResolvedValueOnce('/output/drawing.png');
+    it('uses default filename with timestamp when none provided', async () => {
       const mockStage = {
         toDataURL: vi.fn().mockReturnValue('data:image/png;base64,DATA'),
       } as unknown as Stage;
 
       const result = await exportImage(mockStage, 'png', 1);
-      expect(result).toBe('/output/drawing.png');
+
+      expect(result).toMatch(/^canvas-\d+\.png$/);
     });
 
-    it('works without optional path parameter', async () => {
-      mockExportPng.mockResolvedValueOnce('/default/path.png');
+    it('uses .jpg extension for JPEG format', async () => {
+      const mockStage = {
+        toDataURL: vi.fn().mockReturnValue('data:image/jpeg;base64,DATA'),
+      } as unknown as Stage;
+
+      const result = await exportImage(mockStage, 'jpeg', 1);
+      expect(result).toMatch(/^canvas-\d+\.jpg$/);
+    });
+
+    it('rejects when download fails', async () => {
+      const error = new Error('Download blocked');
+      vi.spyOn(document, 'createElement').mockImplementationOnce(() => {
+        throw error;
+      });
+
       const mockStage = {
         toDataURL: vi.fn().mockReturnValue('data:image/png;base64,DATA'),
       } as unknown as Stage;
 
-      await exportImage(mockStage, 'png', 1);
-
-      expect(mockExportPng).toHaveBeenCalledWith({
-        dataURL: 'data:image/png;base64,DATA',
-        format: 'png',
-        path: undefined,
-      });
+      await expect(exportImage(mockStage, 'png', 1)).rejects.toThrow('Download blocked');
     });
   });
 });
