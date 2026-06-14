@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Canvas } from '@/components/canvas/Canvas';
 import { Toolbar } from '@/components/Toolbar/Toolbar';
 import { LayerPanel } from '@/components/LayerPanel/LayerPanel';
@@ -8,9 +8,14 @@ import { PressToTalkPanel } from '@/components/PressToTalk/PressToTalkPanel';
 import { ExportDialog } from '@/components/ExportDialog/ExportDialog';
 import { useToolStore } from '@/stores/tool.store';
 import { useUIStore } from '@/stores/ui.store';
+import { useCanvasStore } from '@/stores/canvas.store';
+import { useHistoryStore } from '@/stores/history.store';
 import { useStageRef } from '@/components/canvas/StageRefContext';
 import { useVoiceCommand } from '@/hooks/useVoiceCommand';
 import { useAutoSave } from '@/hooks/useAutoSave';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { attachCanvasHistory } from '@/stores/canvas.store.history';
+import { executeCommand } from '@/services/commandExecutor';
 import styles from './App.module.css';
 
 function App() {
@@ -18,13 +23,27 @@ function App() {
   const sidebarVisible = useUIStore((s) => s.sidebar.visible);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
-  // Activate background hooks that wire up voice → commands and the
-  // 60-second auto-save timer.
   useVoiceCommand();
   useAutoSave();
 
-  // The Konva stage ref is exposed by Canvas via context, so the export
-  // dialog can read it from anywhere in the tree.
+  // Wire the canvas store to the history store so every mutation is
+  // automatically snapshot for undo/redo.
+  useEffect(() => attachCanvasHistory(), []);
+
+  const handleUndo = useCallback(() => {
+    executeCommand({ command: 'undo' }, {
+      canvasStore: { ...useCanvasStore, historyStore: useHistoryStore },
+    });
+  }, []);
+
+  const handleRedo = useCallback(() => {
+    executeCommand({ command: 'redo' }, {
+      canvasStore: { ...useCanvasStore, historyStore: useHistoryStore },
+    });
+  }, []);
+
+  useKeyboardShortcuts({ onUndo: handleUndo, onRedo: handleRedo });
+
   const stageRef = useStageRef();
 
   return (

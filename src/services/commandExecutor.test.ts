@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { executeCommand } from './commandExecutor';
 import { useCanvasStore } from '@/stores/canvas.store';
 
@@ -158,18 +158,52 @@ describe('executeCommand', () => {
   });
 
   describe('undo', () => {
-    it('is a no-op (history store not yet implemented)', () => {
+    it('is a no-op when no historyStore is provided', () => {
       expect(() =>
         executeCommand({ command: 'undo' }, { canvasStore: useCanvasStore }),
       ).not.toThrow();
     });
+
+    it('restores the previous canvas state when a historyStore is wired up', () => {
+      const fakeHistory = {
+        undo: vi.fn(() => null),
+        redo: vi.fn(() => null),
+        push: vi.fn(),
+        canUndo: vi.fn(() => true),
+        canRedo: vi.fn(() => false),
+      };
+
+      executeCommand(
+        { command: 'undo' },
+        { canvasStore: { ...useCanvasStore, historyStore: fakeHistory } },
+      );
+
+      expect(fakeHistory.undo).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('redo', () => {
-    it('is a no-op (history store not yet implemented)', () => {
+    it('is a no-op when no historyStore is provided', () => {
       expect(() =>
         executeCommand({ command: 'redo' }, { canvasStore: useCanvasStore }),
       ).not.toThrow();
+    });
+
+    it('calls historyStore.redo when wired up', () => {
+      const fakeHistory = {
+        undo: vi.fn(() => null),
+        redo: vi.fn(() => null),
+        push: vi.fn(),
+        canUndo: vi.fn(() => false),
+        canRedo: vi.fn(() => true),
+      };
+
+      executeCommand(
+        { command: 'redo' },
+        { canvasStore: { ...useCanvasStore, historyStore: fakeHistory } },
+      );
+
+      expect(fakeHistory.redo).toHaveBeenCalledTimes(1);
     });
   });
 });
