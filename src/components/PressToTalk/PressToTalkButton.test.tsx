@@ -1,6 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { PressToTalkButton } from './PressToTalkButton';
 import { useVoiceStore } from '@/stores/voice.store';
 import type { TranscriptionStatus } from '@/shared/types';
