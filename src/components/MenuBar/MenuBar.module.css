@@ -1,0 +1,74 @@
+.menuBar {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 8px;
+  background-color: var(--color-surface, #1e1e2e);
+  border-bottom: 1px solid var(--color-border, #3a3a4a);
+  user-select: none;
+  position: relative;
+  z-index: 10;
+}
+
+.menuItem {
+  position: relative;
+}
+
+.trigger {
+  background: transparent;
+  border: none;
+  color: var(--color-text-primary, #e4e4e7);
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.trigger:hover {
+  background-color: var(--color-hover, rgba(255, 255, 255, 0.06));
+}
+
+.trigger.active {
+  background-color: var(--color-active, rgba(255, 255, 255, 0.1));
+}
+
+.dropdown {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 160px;
+  background-color: var(--color-surface-elevated, #2a2a3a);
+  border: 1px solid var(--color-border, #3a3a4a);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 20;
+}
+
+.dropdown li {
+  margin: 0;
+}
+
+.dropdown button {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--color-text-primary, #e4e4e7);
+  font-size: 13px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.dropdown button:hover:not(:disabled) {
+  background-color: var(--color-hover, rgba(255, 255, 255, 0.08));
+}
+
+.dropdown button:disabled {
+  color: var(--color-text-muted, #6b7280);
+  cursor: not-allowed;
+}
