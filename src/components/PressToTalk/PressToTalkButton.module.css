@@ -1,0 +1,88 @@
+.button {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  user-select: none;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.button:active {
+  transform: scale(0.95);
+}
+
+/* Idle state - blue */
+.idle {
+  background-color: #3b82f6;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.6);
+}
+
+.idle:hover {
+  background-color: #2563eb;
+}
+
+/* Recording state - red with pulse animation */
+.recording {
+  background-color: #ef4444;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.8);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 24px rgba(239, 68, 68, 1);
+    transform: scale(1.05);
+  }
+}
+
+/* Connecting state - blue with fade */
+.connecting {
+  background-color: #60a5fa;
+  box-shadow: 0 0 12px rgba(96, 165, 250, 0.6);
+  animation: blink 1.5s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Connected state - green */
+.connected {
+  background-color: #10b981;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
+}
+
+/* Transcribing state - yellow */
+.transcribing {
+  background-color: #eab308;
+  box-shadow: 0 0 16px rgba(234, 179, 8, 0.8);
+  animation: blink 0.8s ease-in-out infinite;
+}
+
+/* Error state - gray */
+.error {
+  background-color: #6b7280;
+  box-shadow: 0 0 8px rgba(107, 114, 128, 0.4);
+  cursor: not-allowed;
+}
+
+.icon {
+  color: white;
+  font-style: normal;
+}
