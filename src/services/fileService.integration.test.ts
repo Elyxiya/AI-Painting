@@ -85,7 +85,7 @@ describe('fileService.save', () => {
     vi.stubGlobal('window', {});
     const project = createMockProject();
     const result = await fileService.save(project);
-    expect(result).toBeUndefined();
+    expect(result).toBeNull();
   });
 });
 

@@ -20,6 +20,9 @@ export interface ElectronAPI {
   file: {
     showOpenDialog: () => Promise<string | null>;
     showSaveDialog: (defaultPath?: string) => Promise<string | null>;
+    save: (json: string, filePath?: string) => Promise<string | null>;
+    open: (filePath?: string) => Promise<string | null>;
+    new: () => Promise<unknown>;
   };
 }
 
@@ -44,6 +47,9 @@ const electronAPI: ElectronAPI = {
   file: {
     showOpenDialog: () => ipcRenderer.invoke(IPC_CHANNELS.FILE.SHOW_OPEN_DIALOG),
     showSaveDialog: (defaultPath) => ipcRenderer.invoke(IPC_CHANNELS.FILE.SHOW_SAVE_DIALOG, defaultPath),
+    save: (json: string, filePath?: string) => ipcRenderer.invoke('file:save', json, filePath),
+    open: (filePath?: string) => ipcRenderer.invoke('file:open', filePath),
+    new: () => ipcRenderer.invoke('file:new'),
   },
 };
 

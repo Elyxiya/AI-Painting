@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   serializeProject,
   deserializeProject,
@@ -252,9 +252,9 @@ describe('deserializeProject', () => {
     const restored = deserializeProject(json);
 
     const shape = restored.canvas.shapes['shape-1'];
-    expect(shape.transform).toBeDefined();
-    expect(shape.transform.scaleX).toBe(1);
-    expect(shape.transform.rotation).toBe(0);
+    expect(shape?.transform).toBeDefined();
+    expect(shape?.transform.scaleX).toBe(1);
+    expect(shape?.transform.rotation).toBe(0);
   });
 });
 
@@ -277,7 +277,7 @@ describe('newProject', () => {
 
     expect(Object.keys(project.canvas.layers).length).toBe(1);
     const layerId = project.canvas.layerOrder[0];
-    expect(project.canvas.layers[layerId]).toBeDefined();
+    expect(project.canvas.layers[layerId as string]).toBeDefined();
   });
 
   it('creates a new project with empty shapes', () => {

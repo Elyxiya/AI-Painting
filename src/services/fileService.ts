@@ -10,7 +10,7 @@ import type { ProjectState, CanvasState } from '@/shared/types';
 const DEFAULT_VERSION = '1.0';
 
 interface FileService {
-  save: (state: ProjectState) => Promise<string | undefined>;
+  save: (state: ProjectState) => Promise<string | null>;
   load: () => Promise<ProjectState | null>;
   serializeProject: (state: ProjectState) => string;
   deserializeProject: (json: string) => ProjectState;
@@ -102,12 +102,12 @@ export const fileService: FileService = {
   deserializeProject,
   newProject,
 
-  async save(state: ProjectState): Promise<string | undefined> {
+  async save(state: ProjectState): Promise<string | null> {
     const json = serializeProject(state);
     if (typeof window !== 'undefined' && window.electronAPI?.file?.save) {
       return window.electronAPI.file.save(json);
     }
-    return undefined;
+    return null;
   },
 
   async load(): Promise<ProjectState | null> {

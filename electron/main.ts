@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import log from 'electron-log/main';
 import { IPC_CHANNELS } from '../src/shared/ipc';
+import { registerFileIPC } from './ipc/file.ipc';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -118,6 +119,7 @@ function setupIPC() {
 app.whenReady().then(() => {
   log.info('[Main] App ready');
   setupIPC();
+  registerFileIPC();
   createWindow();
 
   app.on('activate', () => {
