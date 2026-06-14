@@ -4,6 +4,7 @@ import { MenuBar } from './MenuBar';
 import { useFileStore } from '@/stores/file.store';
 import { useCanvasStore } from '@/stores/canvas.store';
 import { useUIStore } from '@/stores/ui.store';
+import { useHistoryStore } from '@/stores/history.store';
 
 vi.mock('@/services/fileService', () => ({
   fileService: {
@@ -118,15 +119,55 @@ describe('MenuBar', () => {
     expect(useCanvasStore.getState().width).toBe(800);
   });
 
-  it('edit menu surfaces undo/redo (disabled until history lands)', () => {
+  it('edit menu undo is disabled when history is empty', () => {
     render(<MenuBar />);
     fireEvent.click(screen.getByTestId('menu-edit'));
-    const undo = screen.getByTestId('menu-item-undo');
-    const redo = screen.getByTestId('menu-item-redo');
-    expect(undo).toBeInTheDocument();
-    expect(redo).toBeInTheDocument();
-    expect(undo).toBeDisabled();
-    expect(redo).toBeDisabled();
+    expect(screen.getByTestId('menu-item-undo')).toBeDisabled();
+  });
+
+  it('undo is enabled after historyStore gains a past entry', () => {
+    useHistoryStore.setState({
+      past: [
+        {
+          width: 1920, height: 1080, backgroundColor: '#fff',
+          layers: {}, shapes: {}, layerOrder: [], activeLayerId: 'layer-default',
+          selection: { shapeIds: [], bounds: null },
+          viewport: { x: 0, y: 0, scale: 1, rotation: 0 },
+        },
+      ],
+      future: [],
+    });
+
+    render(<MenuBar />);
+    fireEvent.click(screen.getByTestId('menu-edit'));
+    expect(screen.getByTestId('menu-item-undo')).not.toBeDisabled();
+  });
+
+  it('undo button dispatches to executeCommand and restores the previous canvas state', () => {
+    // Push a snapshot where shapes is empty, then add a shape so undo restores it.
+    useHistoryStore.setState({
+      past: [
+        {
+          width: 1920, height: 1080, backgroundColor: '#fff',
+          layers: {}, shapes: {}, layerOrder: [], activeLayerId: 'layer-default',
+          selection: { shapeIds: [], bounds: null },
+          viewport: { x: 0, y: 0, scale: 1, rotation: 0 },
+        },
+      ],
+      future: [],
+    });
+    useCanvasStore.getState().addShape({
+      type: 'rectangle', name: 'r', visible: true, locked: false, opacity: 1, blendMode: 'normal',
+      transform: { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, skewX: 0, skewY: 0 },
+      width: 10, height: 10, fill: '#000',
+    });
+    expect(Object.keys(useCanvasStore.getState().shapes)).toHaveLength(1);
+
+    render(<MenuBar />);
+    fireEvent.click(screen.getByTestId('menu-edit'));
+    fireEvent.click(screen.getByTestId('menu-item-undo'));
+
+    expect(Object.keys(useCanvasStore.getState().shapes)).toHaveLength(0);
   });
 
   it('view menu toggles sidebar visibility', () => {

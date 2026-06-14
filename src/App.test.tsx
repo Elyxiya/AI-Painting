@@ -13,6 +13,14 @@ vi.mock('@/hooks/useVoiceCommand', () => ({
   useVoiceCommand: () => undefined,
 }));
 
+vi.mock('@/hooks/useKeyboardShortcuts', () => ({
+  useKeyboardShortcuts: () => undefined,
+}));
+
+vi.mock('@/stores/canvas.store.history', () => ({
+  attachCanvasHistory: () => () => undefined,
+}));
+
 import App from './App';
 
 test('App renders without crashing', () => {

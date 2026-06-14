@@ -3,6 +3,8 @@ import { fileService, newProject } from '@/services/fileService';
 import { useFileStore } from '@/stores/file.store';
 import { useCanvasStore } from '@/stores/canvas.store';
 import { useUIStore } from '@/stores/ui.store';
+import { useHistoryStore } from '@/stores/history.store';
+import { executeCommand } from '@/services/commandExecutor';
 import styles from './MenuBar.module.css';
 
 type OpenMenu = 'file' | 'edit' | 'view' | null;
@@ -13,8 +15,9 @@ export interface MenuBarProps {
 
 export const MenuBar: FC<MenuBarProps> = ({ onExportRequest }) => {
   const [openMenu, setOpenMenu] = useState<OpenMenu>(null);
+  const canUndo = useHistoryStore((s) => s.past.length > 0);
+  const canRedo = useHistoryStore((s) => s.future.length > 0);
 
-  // Edit menu is wired up in PR-12; for now they are disabled placeholders.
   const handleToggle = (menu: OpenMenu) => {
     setOpenMenu((current) => (current === menu ? null : menu));
   };
@@ -24,6 +27,7 @@ export const MenuBar: FC<MenuBarProps> = ({ onExportRequest }) => {
   const handleNew = () => {
     useFileStore.getState().setStatus('new');
     useFileStore.getState().setCurrentProject(null);
+    useHistoryStore.getState().clear();
     newProject();
     handleClose();
   };
@@ -61,6 +65,7 @@ export const MenuBar: FC<MenuBarProps> = ({ onExportRequest }) => {
       const project = await fileService.load();
       if (project) {
         useCanvasStore.getState().loadState(project.canvas);
+        useHistoryStore.getState().clear();
         useFileStore.getState().setSaved();
       }
     } catch {
@@ -71,6 +76,20 @@ export const MenuBar: FC<MenuBarProps> = ({ onExportRequest }) => {
   const handleExport = () => {
     handleClose();
     onExportRequest?.();
+  };
+
+  const handleUndo = () => {
+    executeCommand({ command: 'undo' }, {
+      canvasStore: { ...useCanvasStore, historyStore: useHistoryStore },
+    });
+    handleClose();
+  };
+
+  const handleRedo = () => {
+    executeCommand({ command: 'redo' }, {
+      canvasStore: { ...useCanvasStore, historyStore: useHistoryStore },
+    });
+    handleClose();
   };
 
   const handleToggleSidebar = () => {
@@ -123,10 +142,22 @@ export const MenuBar: FC<MenuBarProps> = ({ onExportRequest }) => {
         {openMenu === 'edit' && (
           <ul className={styles.dropdown} data-testid="menu-edit-dropdown">
             <li>
-              <button data-testid="menu-item-undo" disabled>撤销</button>
+              <button
+                data-testid="menu-item-undo"
+                onClick={handleUndo}
+                disabled={!canUndo}
+              >
+                撤销
+              </button>
             </li>
             <li>
-              <button data-testid="menu-item-redo" disabled>重做</button>
+              <button
+                data-testid="menu-item-redo"
+                onClick={handleRedo}
+                disabled={!canRedo}
+              >
+                重做
+              </button>
             </li>
           </ul>
         )}

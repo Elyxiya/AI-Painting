@@ -8,6 +8,7 @@ import type {
   PathShape,
   TextShape,
   ImageShape,
+  CanvasState,
 } from '@/shared/types';
 
 type ShapeData =
@@ -18,20 +19,40 @@ type ShapeData =
   | Omit<TextShape, 'id' | 'layerId'>
   | Omit<ImageShape, 'id' | 'layerId'>;
 
-interface ExecuteContext {
+export interface HistoryStoreLike {
+  undo: () => CanvasState | null;
+  redo: () => CanvasState | null;
+  push: (snapshot: CanvasState) => void;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
+}
+
+/** A zustand-bound store hook provides the same surface as HistoryStoreLike. */
+export type HistoryStoreHook = {
+  (): HistoryStoreLike;
+  getState: () => HistoryStoreLike;
+  setState: (
+    partial:
+      | HistoryStoreLike
+      | ((state: HistoryStoreLike) => Partial<HistoryStoreLike>),
+  ) => void;
+  subscribe: (listener: (state: HistoryStoreLike) => void) => () => void;
+};
+
+export interface ExecuteContext {
   canvasStore: {
-    getState: () => {
-      getActiveLayerId: () => string;
-      addShape: (shape: ShapeData & { layerId?: string }) => string;
-      deleteShape: (id: string) => void;
-      shapes: Record<string, Shape>;
-      selection: { shapeIds: string[] };
-    };
-    historyStore?: {
-      undo: () => void;
-      redo: () => void;
-    };
+    getState: () => CanvasStoreLike;
+    historyStore?: HistoryStoreLike | HistoryStoreHook;
   };
+}
+
+interface CanvasStoreLike {
+  getActiveLayerId: () => string;
+  addShape: (shape: ShapeData & { layerId?: string }) => string;
+  deleteShape: (id: string) => void;
+  shapes: Record<string, Shape>;
+  selection: { shapeIds: string[] };
+  loadState: (state: CanvasState) => void;
 }
 
 /**
@@ -64,15 +85,45 @@ export function executeCommand(cmd: Command, ctx: ExecuteContext): void {
     }
 
     case 'undo': {
-      // Will be implemented when history store is added (PR-09).
+      const historyStore = resolveHistoryStore(ctx.canvasStore.historyStore);
+      if (!historyStore) {
+        break;
+      }
+      const snapshot = historyStore.undo();
+      if (snapshot) {
+        state.loadState(snapshot);
+      }
       break;
     }
 
     case 'redo': {
-      // Will be implemented when history store is added (PR-09).
+      const historyStore = resolveHistoryStore(ctx.canvasStore.historyStore);
+      if (!historyStore) {
+        break;
+      }
+      const snapshot = historyStore.redo();
+      if (snapshot) {
+        state.loadState(snapshot);
+      }
       break;
     }
   }
+}
+
+/**
+ * Accepts either a plain history store object (for tests) or a zustand
+ * hook (for production), and returns the underlying HistoryStoreLike.
+ */
+function resolveHistoryStore(
+  input: HistoryStoreLike | HistoryStoreHook | undefined,
+): HistoryStoreLike | null {
+  if (!input) {
+    return null;
+  }
+  if (typeof input === 'function') {
+    return (input as HistoryStoreHook).getState();
+  }
+  return input;
 }
 
 function createShapeData(
