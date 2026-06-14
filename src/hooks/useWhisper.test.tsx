@@ -14,10 +14,21 @@ const mockTranscribe = vi.hoisted(() => vi.fn());
 vi.mock('@/services/whisper.service', () => ({
   mockTranscriber: {
     transcribe: mockTranscribe,
+    engine: 'mock' as const,
   },
-  createTranscriber: vi.fn(() => mockTranscribe),
+  createTranscriber: vi.fn(() => ({
+    transcribe: mockTranscribe,
+    engine: 'mock' as const,
+  })),
+  getTranscriberEngine: vi.fn(() => 'mock'),
+  initTranscriber: vi.fn(async () => ({
+    transcribe: mockTranscribe,
+    engine: 'mock' as const,
+  })),
+  _resetTranscriberCache: vi.fn(),
   default: {
     transcribe: mockTranscribe,
+    engine: 'mock' as const,
   },
 }));
 
@@ -155,6 +166,28 @@ describe('useWhisper', () => {
       expect(result.current.interimText).toBe('');
       expect(result.current.finalText).toBe('');
       expect(result.current.isRecording).toBe(false);
+    });
+  });
+
+  describe('engine + readiness (v2)', () => {
+    it('exposes the selected engine after init', async () => {
+      const { result } = renderHook(() => useWhisper());
+      // Wait for the init promise to resolve.
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      expect(typeof result.current.engine).toBe('string');
+      expect(['transformers', 'webspeech', 'mock']).toContain(result.current.engine);
+    });
+
+    it('isReady is true after init completes', async () => {
+      const { result } = renderHook(() => useWhisper());
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      expect(result.current.isReady).toBe(true);
     });
   });
 });

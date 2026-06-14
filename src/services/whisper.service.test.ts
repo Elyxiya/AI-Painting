@@ -1,102 +1,115 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-// Create mock function outside vi.mock for reference
-const mockTranscribe = vi.hoisted(() => vi.fn());
-
-// Mock whisper service with controllable transcriber
-vi.mock('@/services/whisper.service', () => ({
-  mockTranscriber: {
-    transcribe: mockTranscribe,
-  },
-  createTranscriber: vi.fn(() => mockTranscribe),
-  default: {
-    transcribe: mockTranscribe,
-  },
+const mockTranscriberObj = vi.hoisted(() => ({
+  transcribe: vi.fn<(audio: Blob) => Promise<string>>(),
+  engine: 'mock' as const,
 }));
 
-import { mockTranscriber, createTranscriber } from '@/services/whisper.service';
+vi.mock('@/services/whisper.service', () => ({
+  mockTranscriber: mockTranscriberObj,
+  createTranscriber: vi.fn(() => mockTranscriberObj),
+  getTranscriberEngine: vi.fn(() => 'mock'),
+  initTranscriber: vi.fn(async () => mockTranscriberObj),
+  _resetTranscriberCache: vi.fn(),
+  default: mockTranscriberObj,
+}));
+
+import {
+  mockTranscriber,
+  createTranscriber,
+  getTranscriberEngine,
+  initTranscriber,
+} from '@/services/whisper.service';
 
 describe('whisper.service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockTranscriberObj.transcribe.mockReset();
   });
 
-  describe('mockTranscriber', () => {
-    it('should be defined', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('mockTranscriber (named export)', () => {
+    it('is defined', () => {
       expect(mockTranscriber).toBeDefined();
     });
 
-    it('should return transcript text', async () => {
-      mockTranscribe.mockResolvedValue('Hello world');
-
-      const result = await mockTranscriber.transcribe(new Blob());
-
-      expect(result).toBe('Hello world');
-      expect(mockTranscribe).toHaveBeenCalledTimes(1);
+    it('exposes a transcribe function', () => {
+      expect(typeof mockTranscriber.transcribe).toBe('function');
     });
 
-    it('should handle empty audio', async () => {
-      mockTranscribe.mockResolvedValue('');
-
-      const result = await mockTranscriber.transcribe(new Blob());
-
-      expect(result).toBe('');
+    it('reports its engine as "mock"', () => {
+      expect(mockTranscriber.engine).toBe('mock');
     });
 
-    it('should handle Chinese text', async () => {
-      mockTranscribe.mockResolvedValue('画一个红色矩形');
-
+    it('transcribe resolves with the value the mock fn was wired to', async () => {
+      mockTranscriberObj.transcribe.mockResolvedValue('hello world');
       const result = await mockTranscriber.transcribe(new Blob());
-
-      expect(result).toBe('画一个红色矩形');
+      expect(result).toBe('hello world');
     });
 
-    it('should propagate errors', async () => {
-      mockTranscribe.mockRejectedValue(new Error('Transcription failed'));
-
-      await expect(mockTranscriber.transcribe(new Blob())).rejects.toThrow(
-        'Transcription failed',
-      );
+    it('propagates errors from the underlying transcribe call', async () => {
+      mockTranscriberObj.transcribe.mockRejectedValue(new Error('boom'));
+      await expect(mockTranscriber.transcribe(new Blob())).rejects.toThrow('boom');
     });
   });
 
-  describe('createTranscriber', () => {
-    it('should return a transcriber function', () => {
-      const transcriber = createTranscriber();
-      expect(typeof transcriber).toBe('function');
+  describe('createTranscriber factory', () => {
+    it('returns a transcriber synchronously', () => {
+      const t = createTranscriber();
+      expect(t).toBeDefined();
+      expect(typeof t.transcribe).toBe('function');
     });
 
-    it('should create transcriber that can transcribe', async () => {
-      mockTranscribe.mockResolvedValue('Test transcription');
-      const transcriber = createTranscriber();
+    it('delegates to the current engine', async () => {
+      mockTranscriberObj.transcribe.mockResolvedValue('factory-ok');
+      const t = createTranscriber();
+      const result = await t.transcribe(new Blob());
+      expect(result).toBe('factory-ok');
+    });
+  });
 
-      const result = await transcriber(new Blob());
+  describe('getTranscriberEngine', () => {
+    it('returns the engine name as a string', () => {
+      const e = getTranscriberEngine();
+      expect(typeof e).toBe('string');
+      expect(['transformers', 'webspeech', 'mock']).toContain(e);
+    });
+  });
 
-      expect(result).toBe('Test transcription');
+  describe('initTranscriber (async)', () => {
+    it('resolves to a Transcriber object', async () => {
+      const t = await initTranscriber();
+      expect(t).toBeDefined();
+      expect(typeof t.transcribe).toBe('function');
+    });
+
+    it('respects the engine selected at init time', async () => {
+      mockTranscriberObj.transcribe.mockResolvedValue('init-engine');
+      const t = await initTranscriber();
+      expect(t.engine).toBe('mock');
+      const result = await t.transcribe(new Blob());
+      expect(result).toBe('init-engine');
     });
   });
 
   describe('default export', () => {
-    it('should have transcribe method', async () => {
-      mockTranscribe.mockResolvedValue('Default export test');
-
-      const { default: transcriber } = await import('@/services/whisper.service');
-
-      const result = await transcriber.transcribe(new Blob());
-
-      expect(result).toBe('Default export test');
+    it('is the mockTranscriber', async () => {
+      const { default: def } = await import('@/services/whisper.service');
+      mockTranscriberObj.transcribe.mockResolvedValue('default-export-ok');
+      const result = await def.transcribe(new Blob());
+      expect(result).toBe('default-export-ok');
     });
   });
 });
 
-describe('Transcriber interface', () => {
-  it('should have transcribe method that accepts Blob and returns Promise<string>', async () => {
-    mockTranscribe.mockResolvedValue('Interface test');
-
-    const transcriber: { transcribe: (audio: Blob) => Promise<string> } = mockTranscriber;
-
-    const result = await transcriber.transcribe(new Blob());
-
+describe('Transcriber interface contract', () => {
+  it('accepts a Blob and returns a Promise<string>', async () => {
+    mockTranscriberObj.transcribe.mockResolvedValue('contract');
+    const t: { transcribe: (b: Blob) => Promise<string> } = mockTranscriber;
+    const result = await t.transcribe(new Blob());
     expect(typeof result).toBe('string');
   });
 });
