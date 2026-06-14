@@ -17,8 +17,13 @@ interface ElectronAPI {
     getBounds: () => Promise<ElectronRectangle | undefined>;
   };
   file: {
+    save: (json: string, filePath?: string) => Promise<string | null>;
+    open: (filePath?: string) => Promise<string | null>;
+    new: () => Promise<unknown>;
     showOpenDialog: () => Promise<string | null>;
     showSaveDialog: (defaultPath?: string) => Promise<string | null>;
+    exportPng: (args: { dataURL: string; format: string; path?: string }) => Promise<string>;
+    exportJpeg?: (args: { dataURL: string; format: string; path?: string }) => Promise<string>;
   };
 }
 

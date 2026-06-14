@@ -1,0 +1,66 @@
+import js from '@eslint/js';
+import tseslint from '@typescript-eslint/eslint-plugin';
+import tsparser from '@typescript-eslint/parser';
+import reactHooks from 'eslint-plugin-react-hooks';
+import reactRefresh from 'eslint-plugin-react-refresh';
+import globals from 'globals';
+
+const browserGlobals = {
+  ...Object.fromEntries(
+    Object.entries(globals.browser).map(([k]) => [k, 'readonly'])
+  ),
+  Electron: 'readonly',
+  React: 'readonly',
+};
+
+const testGlobals = {
+  ...Object.fromEntries(
+    Object.entries(globals.node).map(([k]) => [k, 'readonly'])
+  ),
+  vi: 'readonly',
+  describe: 'readonly',
+  it: 'readonly',
+  test: 'readonly',
+  expect: 'readonly',
+  beforeAll: 'readonly',
+  beforeEach: 'readonly',
+  afterAll: 'readonly',
+  afterEach: 'readonly',
+};
+
+export default [
+  js.configs.recommended,
+  {
+    files: ['**/*.{ts,tsx}'],
+    languageOptions: {
+      parser: tsparser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+        ecmaFeatures: { jsx: true },
+      },
+      globals: browserGlobals,
+    },
+    plugins: {
+      '@typescript-eslint': tseslint,
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
+    },
+    rules: {
+      ...tseslint.configs.recommended.rules,
+      ...reactHooks.configs.recommended.rules,
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
+    },
+  },
+  {
+    files: ['**/*.test.{ts,tsx}', '**/test/**/*.{ts,tsx}'],
+    languageOptions: {
+      globals: testGlobals,
+    },
+  },
+  {
+    ignores: ['dist/**', 'dist-electron/**', 'node_modules/**', 'release/**', 'e2e/**'],
+  },
+];
