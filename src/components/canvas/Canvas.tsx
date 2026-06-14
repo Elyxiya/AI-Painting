@@ -6,10 +6,11 @@ import { useToolStore } from '@/stores/tool.store';
 import { CanvasShape } from './CanvasShape';
 import { ToolOverlay } from './ToolOverlay';
 import { useToolHandlers } from '@/hooks/useToolHandlers';
+import { StageRefContext } from './StageRefContext';
 import styles from './Canvas.module.css';
 
 export const Canvas: React.FC = () => {
-  const stageRef = useRef<Konva.Stage>(null);
+  const stageRef = useRef<Konva.Stage | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [stageSize, setStageSize] = useState({ width: 800, height: 600 });
 
@@ -75,6 +76,7 @@ export const Canvas: React.FC = () => {
   };
 
   return (
+    <StageRefContext.Provider value={stageRef}>
     <div
       ref={containerRef}
       className={styles.container}
@@ -129,5 +131,6 @@ export const Canvas: React.FC = () => {
         </Layer>
       </Stage>
     </div>
+    </StageRefContext.Provider>
   );
 };

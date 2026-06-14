@@ -5,6 +5,14 @@ vi.mock('@/components/canvas/Canvas', () => ({
   Canvas: () => <div data-testid="mock-canvas">Canvas</div>,
 }));
 
+vi.mock('@/hooks/useAutoSave', () => ({
+  useAutoSave: () => undefined,
+}));
+
+vi.mock('@/hooks/useVoiceCommand', () => ({
+  useVoiceCommand: () => undefined,
+}));
+
 import App from './App';
 
 test('App renders without crashing', () => {
@@ -31,4 +39,14 @@ test('App renders canvas area', () => {
   const appDiv = document.getElementById('app');
   expect(appDiv).toBeInTheDocument();
   expect(screen.getByTestId('mock-canvas')).toBeInTheDocument();
+});
+
+test('App renders the UI shell: menu bar, status bar, press-to-talk panel, layer panel', () => {
+  render(<App />);
+  expect(screen.getByTestId('menu-bar')).toBeInTheDocument();
+  expect(screen.getByTestId('status-bar')).toBeInTheDocument();
+  expect(screen.getByTestId('ptt-panel')).toBeInTheDocument();
+  expect(screen.getByTestId('ptt-button')).toBeInTheDocument();
+  // LayerPanel renders its own root; assert via the sidebar presence.
+  expect(document.querySelector('[class*="sidebar"]')).toBeInTheDocument();
 });
