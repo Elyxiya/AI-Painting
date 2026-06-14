@@ -21,12 +21,14 @@ const DEFAULT_TRANSFORM = {
 
 export function useToolHandlers(stageRef: React.RefObject<Konva.Stage | null>) {
   const addShape = useCanvasStore((s) => s.addShape);
+  const isExporting = useCanvasStore((s) => s.isExporting);
   const { activeTool, brush, startDrawing, updateDrawing, updateTempPoints, endDrawing } =
     useToolStore();
   const penPointsRef = useRef<number[]>([]);
 
   const handleMouseDown = useCallback(
     (_e: Konva.KonvaEventObject<MouseEvent>) => {
+      if (isExporting) return;
       if (activeTool === 'select' || activeTool === 'hand' || activeTool === 'zoom') return;
 
       const stage = stageRef.current;
@@ -41,11 +43,12 @@ export function useToolHandlers(stageRef: React.RefObject<Konva.Stage | null>) {
       startDrawing(realPos.x, realPos.y);
       penPointsRef.current = [realPos.x, realPos.y];
     },
-    [activeTool, stageRef, startDrawing],
+    [activeTool, stageRef, startDrawing, isExporting],
   );
 
   const handleMouseMove = useCallback(
     (_e: Konva.KonvaEventObject<MouseEvent>) => {
+      if (isExporting) return;
       if (activeTool === 'select' || activeTool === 'hand' || activeTool === 'zoom') return;
 
       const stage = stageRef.current;
@@ -64,11 +67,12 @@ export function useToolHandlers(stageRef: React.RefObject<Konva.Stage | null>) {
         updateTempPoints([...penPointsRef.current]);
       }
     },
-    [activeTool, stageRef, updateDrawing, updateTempPoints],
+    [activeTool, stageRef, updateDrawing, updateTempPoints, isExporting],
   );
 
   const handleMouseUp = useCallback(
     (_e: Konva.KonvaEventObject<MouseEvent>) => {
+      if (isExporting) return;
       if (activeTool === 'select' || activeTool === 'hand' || activeTool === 'zoom') return;
 
       const stage = stageRef.current;
@@ -188,7 +192,7 @@ export function useToolHandlers(stageRef: React.RefObject<Konva.Stage | null>) {
 
       endDrawing();
     },
-    [activeTool, brush, stageRef, addShape, endDrawing],
+    [activeTool, brush, stageRef, addShape, endDrawing, isExporting],
   );
 
   return { handleMouseDown, handleMouseMove, handleMouseUp };

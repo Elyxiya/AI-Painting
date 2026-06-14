@@ -61,10 +61,14 @@ function createInitialState(): CanvasState {
       scale: 1,
       rotation: 0,
     },
+    isExporting: false,
   };
 }
 
 interface CanvasStore extends CanvasState {
+  isExporting: boolean;
+  setExporting: (exporting: boolean) => void;
+
   // Shape operations
   addShape: (shape: ShapeData & { layerId?: string }) => string;
   updateShape: (id: string, updates: Partial<Shape>) => void;
@@ -275,6 +279,12 @@ export const useCanvasStore = create<CanvasStore>()(
       const layer = layers[activeLayerId];
       if (!layer) return false;
       return layer.visible && !layer.locked;
+    },
+
+    setExporting: (exporting) => {
+      set((state) => {
+        state.isExporting = exporting;
+      });
     },
   })),
 );

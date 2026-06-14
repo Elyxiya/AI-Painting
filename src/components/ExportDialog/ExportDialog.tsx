@@ -2,6 +2,7 @@ import type { FC } from 'react';
 import { useState } from 'react';
 import type { Stage } from 'konva/lib/Stage';
 import { exportImage, type ExportFormat, type PixelRatio } from '@/services/exportService';
+import { useCanvasStore } from '@/stores/canvas.store';
 import styles from './ExportDialog.module.css';
 
 interface ExportDialogProps {
@@ -19,11 +20,13 @@ export const ExportDialog: FC<ExportDialogProps> = ({
 }) => {
   const [format, setFormat] = useState<ExportFormat>('png');
   const [pixelRatio, setPixelRatio] = useState<PixelRatio>(1);
-  const [isExporting, setIsExporting] = useState(false);
+  const [isExporting, setIsExportingLocal] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const setExportingGlobal = useCanvasStore((s) => s.setExporting);
 
   const handleExport = async () => {
-    setIsExporting(true);
+    setIsExportingLocal(true);
+    setExportingGlobal(true);
     setError(null);
 
     try {
@@ -35,7 +38,8 @@ export const ExportDialog: FC<ExportDialogProps> = ({
       setError(errorMessage);
       onExportError?.(err instanceof Error ? err : new Error(errorMessage));
     } finally {
-      setIsExporting(false);
+      setIsExportingLocal(false);
+      setExportingGlobal(false);
     }
   };
 

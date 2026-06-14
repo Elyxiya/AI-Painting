@@ -52,6 +52,7 @@ function createMockProject(overrides?: Partial<ProjectState>): ProjectState {
         scale: 1,
         rotation: 0,
       },
+      isExporting: false,
     },
     tool: {
       activeTool: 'select',
@@ -466,6 +467,7 @@ describe('round-trip serialization', () => {
           scale: 1.5,
           rotation: 0,
         },
+        isExporting: false,
       },
       tool: {
         activeTool: 'rectangle',

@@ -143,6 +143,7 @@ export interface CanvasState {
     bounds: Bounds | null;
   };
   viewport: Viewport;
+  isExporting: boolean;
 }
 
 // ═══════════════════════════════════════════════════════════════

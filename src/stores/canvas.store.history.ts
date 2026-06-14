@@ -45,5 +45,6 @@ function serializeCanvasState(state: ReturnType<typeof useCanvasStore.getState>)
     activeLayerId: state.activeLayerId,
     selection: state.selection,
     viewport: state.viewport,
+    isExporting: state.isExporting,
   };
 }

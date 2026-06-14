@@ -13,6 +13,7 @@ function makeState(): CanvasState {
     activeLayerId: 'layer-default',
     selection: { shapeIds: [], bounds: null },
     viewport: { x: 0, y: 0, scale: 1, rotation: 0 },
+    isExporting: false,
   };
 }
 

@@ -40,6 +40,7 @@ function createDefaultCanvasState(): CanvasState {
     activeLayerId: DEFAULT_LAYER_ID,
     selection: { shapeIds: [], bounds: null },
     viewport: { x: 0, y: 0, scale: 1, rotation: 0 },
+    isExporting: false,
   };
 }
 
