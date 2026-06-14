@@ -6,12 +6,26 @@ import {
   type Shape,
   type Layer,
   type Viewport,
+  type RectangleShape,
+  type EllipseShape,
+  type LineShape,
+  type PathShape,
+  type TextShape,
+  type ImageShape,
 } from '@/shared/types';
 import {
   DEFAULT_CANVAS_WIDTH,
   DEFAULT_CANVAS_HEIGHT,
   DEFAULT_BACKGROUND_COLOR,
 } from '@/shared/constants';
+
+export type ShapeData =
+  | Omit<RectangleShape, 'id' | 'layerId'>
+  | Omit<EllipseShape, 'id' | 'layerId'>
+  | Omit<LineShape, 'id' | 'layerId'>
+  | Omit<PathShape, 'id' | 'layerId'>
+  | Omit<TextShape, 'id' | 'layerId'>
+  | Omit<ImageShape, 'id' | 'layerId'>;
 
 const DEFAULT_LAYER_ID = 'layer-default';
 
@@ -52,7 +66,7 @@ function createInitialState(): CanvasState {
 
 interface CanvasStore extends CanvasState {
   // Shape operations
-  addShape: (shape: Omit<Shape, 'id'> & { layerId?: string }) => string;
+  addShape: (shape: ShapeData & { layerId?: string }) => string;
   updateShape: (id: string, updates: Partial<Shape>) => void;
   deleteShape: (id: string) => void;
 
